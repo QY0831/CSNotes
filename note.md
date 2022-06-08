@@ -196,3 +196,27 @@ Content-Type: text/html
  - User-Agent：浏览器和用户代理信息
 
 ## 6.5 响应首部字段
+ - Accept-Ranges：能否处理范围请求
+ - Age：在多久前创建了响应
+ - ETag：实体标识，资源更新后，这个值会改变
+ - Location：重定向的位置
+ - Proxy-Authenticate：代理服务器要求的认证信息
+ - Retry-After：多久后才能再次发送请求
+ - Server：服务器的应用程序信息
+## 6.6 实体首部字段
+ - Allow：通知客户端支持的方法
+ - Content-Encoding：编码方式
+ - Content-Language：资源语言
+ - Content-Length：资源长度
+ - Content-Location：资源URI
+ - Content-MD5：资源经MD5算法生成的值，用于验证完整性
+ - Content-Range：返回实体的范围
+ - Content-Type：实体的文件类型
+ - Expires：资源失效日期
+ - Last-Modified：资源上次修改时间
+
+## 6.7 为Cookie服务的首部字段
+ - Set-Cookie：位于响应报文，告知Cookie的相关信息
+ - Cookie：位于请求报文，告知服务端，客户端发送请求时会包含Cookie信息
+
+# 7 确保Web安全的HTTPS
