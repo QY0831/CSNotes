@@ -173,3 +173,26 @@ Content-Type: text/html
  - Upgrade：检测是否能用更高版本的协议进行通信
  - Via：追踪请求的传输路径
  - Warning：告知用户一些与缓存相关的问题的警告
+
+## 6.4 请求首部字段
+ - Accept：通知服务器能够处理的文件类型及优先级
+ - Accept-Charset：通知服务器能够处理的字符集类型及优先级
+ - Accept-Encoding：通知服务器能够处理的内容编码（如gzip）及优先级
+ - Accept-Language：通知服务器能够处理的语言类型及优先级
+ - Authorization：客户端的认证信息
+ - Expect：期望服务端出现的行为，如100-continue
+ - From：客户端的电子邮件
+ - Host：请求资源的主机名和端口号
+ - If-Match：条件请求，告知服务器请求资源的实体标记值ETag，若与资源的Etag相同，则处理请求
+ - If-None-Match：与If-Match相反
+ - If-Modified-Since：若字段值早于资源的更新时间，则处理请求
+ - If-Unmodified-Since：若字段值晚于资源的更新时间，则处理请求
+ - If-Range：若字段值和ETag匹配，则执行范围请求，否则返回全部
+ - Max-Forwards：往下转发的最大次数
+ - Proxy-Authorization：客户端和代理之间的认证信息
+ - Range：请求的范围
+ - Referer：请求资源的原始URI，即请求的URI是从哪个页面发起的
+ - TE：客户端能处理响应的编码方式和优先级
+ - User-Agent：浏览器和用户代理信息
+
+## 6.5 响应首部字段
