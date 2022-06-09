@@ -81,8 +81,65 @@ class Factory:
             return ProductA()
         elif name == 'B':
             return ProductB()
+
+if __name__ == '__main__':
+    product_name = 'A' # 可从配置文件得到
+    product = Factory.get_product(product_name)
 ```
 
 # 2.2 工厂方法模式
 简单工厂模式虽然简单，但存在一个很严重的问题。当系统中需要引入新产品时，由于静态工厂方法通过所传入参数的不同来创建不同的产品，
-这必定要修改工厂类的源代码，将违背“开闭原则”，如何实现增加新产品而不影响已有代码？
+这必定要修改工厂类的源代码，将违背“开闭原则”，如何实现增加新产品而不影响已有代码？  
+在工厂方法模式中，我们不再提供一个统一的工厂类来创建所有的产品对象，而是针对不同的产品提供不同的工厂，
+系统提供一个与产品等级结构对应的工厂等级结构。定义一个用于创建对象的接口，让子类决定将哪一个类实例化。工厂方法模式让一个类的实例化延迟到其子类。  
+包含四个角色：
+ - 抽象工厂类：声明了工厂方法(Factory Method)，用于返回一个产品。抽象工厂是工厂方法模式的核心，所有创建对象的工厂类都必须实现该接口。
+ - 具体工厂类：抽象工厂类的子类，实现了抽象工厂中定义的工厂方法，并可由客户端调用，返回一个具体产品类的实例。
+ - 抽象产品类：产品对象的公共父类。
+ - 具体产品类：实现了抽象产品接口，某种类型的具体产品由专门的具体工厂创建，具体工厂和具体产品之间一一对应。
+
+```python
+from abc import ABC, abstractmethod
+class AbstractProduct(ABC):
+    @abstractmethod
+    def do_something(self):
+        pass
+
+class ProductA(AbstractProduct):
+    def do_something(self):
+        print('I am A')
+
+class ProductB(AbstractProduct):
+    def do_something(self):
+        print('I am B')
+
+class AbstractFactory(ABC):
+    
+    @staticmethod
+    @abstractmethod
+    def get_product():
+        pass
+
+class FactoryA(AbstractFactory):
+    @staticmethod
+    def get_product():
+        return ProductA()
+
+class FactoryB(AbstractFactory):
+    @staticmethod
+    def get_product():
+        return ProductB()
+
+if __name__ == '__main__':
+    factory = FactoryA() # 可从配置文件得到
+    product = factory.get_product()
+```
+### 优点
+ - 用户只需要关心所需产品对应的工厂。  
+ - 工厂可以自主确定创建何种产品对象。  
+ - 系统中加入新产品时，无须修改抽象工厂和抽象产品提供的接口，无须修改客户端，也无须修改其他的具体工厂和具体产品，而只要添加一个具体工厂和具体产品就可以了。  
+### 缺点
+ - 在添加新产品时，需要编写新的具体产品类，而且还要提供与之对应的具体工厂类，系统中类的个数将成对增加，在一定程度上增加了系统的复杂度。
+### 适用场景
+ - 客户端不知道它所需要的对象的类。
+ - 抽象工厂类通过其子类来指定创建哪个对象。
