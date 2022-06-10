@@ -143,3 +143,88 @@ if __name__ == '__main__':
 ### 适用场景
  - 客户端不知道它所需要的对象的类。
  - 抽象工厂类通过其子类来指定创建哪个对象。
+
+## 2.3 抽象工厂模式
+由于工厂方法模式中的每个工厂只生产一类产品，可能会导致系统中存在大量的工厂类，势必会增加系统的开销。
+此时，我们可以考虑将一些相关的产品组成一个“产品族”，由同一个工厂来统一生产。
+抽象工厂模式(Abstract Factory Pattern)提供一个创建一系列相关或相互依赖对象的接口，而无须指定它们具体的类。
+包含四个角色：
+ - 抽象工厂类：它声明了一组用于创建一族产品的方法，每一个方法对应一种产品。
+ - 具体工厂类：实现了在抽象工厂中声明的创建产品的方法，生成一组具体产品，这些产品构成了一个产品族。
+ - 抽象产品类：为每种产品声明接口，声明了产品所具有的业务方法。
+ - 具体产品类：定义具体工厂生产的具体产品对象，实现抽象产品接口中声明的业务方法。  
+
+```python
+from abc import ABC, abstractmethod
+class AbstractProductA(ABC):
+    @abstractmethod
+    def do_something(self):
+        pass
+
+class ProductA1(AbstractProductA):
+    def do_something(self):
+        print('I am A1')
+
+class ProductA2(AbstractProductA):
+    def do_something(self):
+        print('I am A2')
+        
+class AbstractProductB(ABC):
+    @abstractmethod
+    def do_something(self):
+        pass
+
+class ProductB1(AbstractProductB):
+    def do_something(self):
+        print('I am B1')
+
+class ProductB2(AbstractProductB):
+    def do_something(self):
+        print('I am B2')
+
+class AbstractFactory(ABC):
+    
+    @staticmethod
+    @abstractmethod
+    def create_productA():
+        pass
+    
+    @staticmethod
+    @abstractmethod
+    def create_productB():
+        pass
+
+class Factory1(AbstractFactory):
+    @staticmethod
+    def create_productA():
+        return ProductA1()
+    
+    @staticmethod
+    def create_productB():
+        return ProductB1()
+
+class Factory2(AbstractFactory):
+    @staticmethod
+    def create_productA():
+        return ProductA2()
+    
+    @staticmethod
+    def create_productB():
+        return ProductB2()
+
+if __name__ == '__main__':
+    factory = Factory1() # 可从配置文件得到
+    product = factory.create_productA()
+```
+在抽象工厂模式中，增加新的产品族很方便，但是增加新的产品等级结构很麻烦，抽象工厂模式的这种性质称为“开闭原则”的倾斜性。  
+### 优点
+ - 隔离了具体类的生成，使得客户并不需要知道什么被创建。  
+ - 当一个产品族中的多个对象被设计成一起工作时，它能够保证客户端始终只使用同一个产品族中的对象。  
+ - 增加新的产品族很方便，无须修改已有系统，符合“开闭原则”。 
+### 缺点
+ - 增加新的产品等级结构麻烦，需要对原有系统进行较大的修改，甚至需要修改抽象层代码，这显然会带来较大的不便，违背了“开闭原则”。。
+### 适用场景
+ - 用户无须关心对象的创建过程。
+ - 系统中有多于一个的产品族，而每次只使用其中某一产品族。可以通过配置文件等方式来使得用户可以动态改变产品族，也可以很方便地增加新的产品族。
+ - 属于同一个产品族的产品将在一起使用。
+ - 产品等级结构稳定，设计完成之后，不会向系统中增加新的产品等级结构或者删除已有的产品等级结构。
