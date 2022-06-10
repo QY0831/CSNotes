@@ -222,9 +222,74 @@ if __name__ == '__main__':
  - 当一个产品族中的多个对象被设计成一起工作时，它能够保证客户端始终只使用同一个产品族中的对象。  
  - 增加新的产品族很方便，无须修改已有系统，符合“开闭原则”。 
 ### 缺点
- - 增加新的产品等级结构麻烦，需要对原有系统进行较大的修改，甚至需要修改抽象层代码，这显然会带来较大的不便，违背了“开闭原则”。。
+ - 增加新的产品等级结构麻烦，需要对原有系统进行较大的修改，甚至需要修改抽象层代码，这显然会带来较大的不便，违背了“开闭原则”。
 ### 适用场景
  - 用户无须关心对象的创建过程。
  - 系统中有多于一个的产品族，而每次只使用其中某一产品族。可以通过配置文件等方式来使得用户可以动态改变产品族，也可以很方便地增加新的产品族。
  - 属于同一个产品族的产品将在一起使用。
  - 产品等级结构稳定，设计完成之后，不会向系统中增加新的产品等级结构或者删除已有的产品等级结构。
+
+## 2.4 单例模式
+为了节约系统资源，有时需要确保系统中某个类只有唯一一个实例，当这个唯一实例创建成功之后，我们无法再创建一个同类型的其他对象，
+所有的操作都只能基于这个唯一实例。为了确保对象的唯一性，我们可以通过单例模式来实现，这就是单例模式的动机所在。  
+
+单例模式(Singleton Pattern)：确保某一个类只有一个实例，而且自行实例化并向整个系统提供这个实例，这个类称为单例类，它提供全局访问的方法。  
+```python
+class SingletonClass(object):
+  def __new__(cls):
+    if not hasattr(cls, 'instance'):
+      cls.instance = super(SingletonClass, cls).__new__(cls)
+    return cls.instance
+
+singleton = SingletonClass()
+new_singleton = SingletonClass()
+ 
+print(singleton is new_singleton)  # True
+ 
+singleton.singl_variable = "Singleton Variable"
+print(new_singleton.singl_variable)  # Singleton Variable  
+
+
+class SingletonChild(SingletonClass):
+    pass
+   
+singleton = SingletonClass() 
+child = SingletonChild()
+print(child is singleton)  # True
+ 
+singleton.singl_variable = "Singleton Variable"
+print(child.singl_variable)  # Singleton Variable
+```
+假如在某一瞬间线程A和线程B都在调用new()方法，此时instance对象为null值，均能通过instance == null的判断。
+由于加锁机制，线程A进入锁定的代码中执行实例创建代码，线程B处于排队等待状态，
+必须等待线程A执行完毕后才可以进入synchronized锁定代码。
+但当A执行完毕时，线程B并不知道实例已经创建，将继续创建新的实例，导致产生多个单例对象，违背单例模式的设计思想，
+因此需要进行进一步改进，进行一次(instance == null)判断，这种方式称为双重检查锁定(Double-Check Locking)。  
+```python
+class Singleton:
+  _instance = None
+  _lock = threading.Lock()
+
+  def __new__(cls, *args, **kwargs):
+    if not cls._instance:
+        with cls._lock:
+          # another thread could have created the instance
+          # before we acquired the lock. So check that the
+          # instance is still nonexistent.
+          if not cls._instance:
+            cls._instance = super(Singleton, cls).__new__(cls)
+    return cls._instance
+```
+### 优点
+ - 单例模式提供了对唯一实例的受控访问。因为单例类封装了它的唯一实例，所以它可以严格控制客户怎样以及何时访问它。  
+ - 由于在系统内存中只存在一个对象，因此可以节约系统资源。  
+ - 允许可变数目的实例。基于单例模式我们可以进行扩展，使用与单例控制相似的方法来获得指定个数的对象实例，既节省系统资源，又解决了单例单例对象共享过多有损性能的问题。 
+### 缺点
+ - 由于单例模式中没有抽象层，因此单例类的扩展有很大的困难。
+ - 单例类的职责过重，在一定程度上违背了“单一职责原则”。因为单例类既充当了工厂角色，提供了工厂方法，同时又充当了产品角色，包含一些业务方法，将产品的创建和产品的本身的功能融合到一起。
+ - 现在很多面向对象语言(如Java、C#)的运行环境都提供了自动垃圾回收的技术，因此，如果实例化的共享对象长时间不被利用，系统会认为它是垃圾， 会自动销毁并回收资源，
+下次利用时又将重新实例化，这将导致共享的单例对象状态的丢失。
+### 适用场景
+ - 系统只需要一个实例对象，如系统要求提供一个唯一的序列号生成器或资源管理器，或者需要考虑资源消耗太大而只允许创建一个对象。
+ - 客户调用类的单个实例只允许使用一个公共访问点，除了该公共访问点，不能通过其他途径访问该实例。
+
