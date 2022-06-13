@@ -406,3 +406,167 @@ if __name__ == '__main__':
  - 需要生成的产品对象的属性相互依赖，需要指定其生成顺序。
  - 对象的创建过程独立于创建该对象的类。在建造者模式中通过引入了指挥者类，将创建过程封装在指挥者类中，而不在建造者类和客户类中。 
  - 隔离复杂对象的创建和使用，并使得相同的创建过程可以创建不同的产品。
+
+# 3 结构型模式
+## 3.1 适配器模式
+将一个接口转换成客户希望的另一个接口，使接口不兼容的那些类可以一起工作，其别名为包装器(Wrapper)。适配器模式既可以作为类结构型模式，也可以作为对象结构型模式。  
+### 角色
+ - 目标抽象类: 目标抽象类定义客户所需接口，可以是一个抽象类或接口，也可以是具体类。  
+ - 适配器类: 适配器可以调用另一个接口，作为一个转换器，对Adaptee和Target进行适配，适配器类是适配器模式的核心，在对象适配器中，它通过继承Target并关联一个Adaptee对象使二者产生联系。  
+ - 适配者类: 适配者即被适配的角色，它定义了一个已经存在的接口，这个接口需要适配，适配者类一般是一个具体类，包含了客户希望使用的业务方法。(我们仅知道其参数和返回值，而不知道其细节，也不能修改其细节)
+```python
+from abc import ABC
+class Adaptee:
+    def need_method(self):
+        pass
+
+class Target(ABC):
+    def methodA(self):
+        pass
+
+class Adaptor(Target):
+    
+    def __init__(self):
+        self.adpatee = Adaptee()
+    
+    def methodA(self):
+        self.adpatee.need_method()
+```
+除了对象适配器模式之外，适配器模式还有一种形式，那就是类适配器模式，类适配器模式和对象适配器模式最大的区别在于适配器和适配者之间的关系不同，
+对象适配器模式中适配器和适配者之间是关联关系，而类适配器模式中适配器和适配者是继承关系。  
+由于Java、C#等语言不支持多重类继承，因此类适配器的使用受到很多限制，类适配器较少使用。  
+
+缺省适配器模式(Default Adapter Pattern)：当不需要实现一个接口所提供的所有方法时，可先设计一个抽象类实现该接口，
+并为接口中每个方法提供一个默认实现（空方法），那么该抽象类的子类可以选择性地覆盖父类的某些方法来实现需求，
+它适用于不想使用一个接口中的所有方法的情况，又称为单接口适配器模式。
+### 角色
+ - 适配者接口： 通常在该接口中声明了大量的方法。
+ - 缺省适配器类：使用空方法的形式实现了在ServiceInterface接口中声明的方法。通常将它定义为抽象类。
+ - 具体业务类：缺省适配器类的子类，在没有引入适配器之前，它需要实现适配者接口，因此需要实现在适配者接口中定义的所有方法，
+而对于一些无须使用的方法也不得不提供空实现。在有了缺省适配器之后，可以直接继承该适配器类，根据需要有选择性地覆盖在适配器类中定义的方法。
+```python
+from abc import ABC
+class AdapteeInterface(ABC):
+    def methodA(self):
+        pass
+    def methodB(self):
+        pass
+    def methodC(self):
+        pass
+
+class Adapter(AdapteeInterface):
+    def methodA(self):
+        pass
+    def methodB(self):
+        pass
+    def methodC(self):
+        pass
+
+class Service(Adapter):
+    def methodA(self):
+        print('only need this method')
+```
+### 优点
+ - 将目标类和适配者类解耦，通过引入一个适配器类来重用现有的适配者类，无须修改原有结构。
+ - 增加了类的透明性和复用性，将具体的业务实现过程封装在适配者类中，对于客户端类而言是透明的，而且提高了适配者的复用性，
+同一个适配者类可以在多个不同的系统中复用。
+### 缺点
+ - 类适配器模式：对于Java、C#等不支持多重类继承的语言，一次最多只能适配一个适配者类，不能同时适配多个适配者。
+### 适用场景
+ - 系统需要使用一些现有的类，而这些类的接口（如方法名）不符合系统的需要，甚至没有这些类的源代码。 
+ - 想创建一个可以重复使用的类，用于与一些彼此之间没有太大关联的一些类，包括一些可能在将来引进的类一起工作。
+
+## 3.2 桥接模式
+桥接模式是一种很实用的结构型设计模式，如果软件系统中某个类存在两个独立变化的维度，通过该模式可以将这两个维度分离出来，使两者可以独立扩展，
+让系统更加符合“单一职责原则”。  
+### 角色
+ - 抽象类：用于定义抽象类的接口，它一般是抽象类而不是接口，其中定义了一个Implementor（实现类接口）类型的对象并可以维护该对象，
+它与Implementor之间具有关联关系，它既可以包含抽象业务方法，也可以包含具体业务方法。
+ - 扩充抽象类：扩充由Abstraction定义的接口，通常情况下它不再是抽象类而是具体类，它实现了在Abstraction中声明的抽象业务方法，
+在RefinedAbstraction中可以调用在Implementor中定义的业务方法。
+ - 实现类接口：定义实现类的接口，一般而言，Implementor接口仅提供基本操作，而Abstraction定义的接口可能会做更多更复杂的操作。
+Implementor接口对这些基本操作进行了声明，而具体实现交给其子类。通过关联关系，在Abstraction中不仅拥有自己的方法，
+还可以调用到Implementor中定义的方法，使用关联关系来替代继承关系。
+ - 具体实现类：具体实现Implementor接口，在不同的ConcreteImplementor中提供基本操作的不同实现。
+```python
+from abc import ABC, abstractmethod
+
+class Implementor(ABC):
+    @abstractmethod
+    def operationImpl(self):
+        pass
+
+class ConcreteImplementor(Implementor):
+    def operationImpl(self):
+        pass
+
+class Abstraction(ABC):
+    
+    def __init__(self, impl):
+        self.impl = impl
+    
+    @abstractmethod
+    def operation(self):
+        pass
+
+class RefinedAbstraction(Abstraction):
+    def operation(self):
+        self.impl.operationImpl()
+```
+在使用桥接模式时，我们首先应该识别出一个类所具有的两个独立变化的维度，将它们设计为两个独立的继承等级结构，为两个维度都提供抽象层，
+并建立抽象耦合。通常情况下，我们将具有两个独立变化维度的类的一些普通业务方法和与之关系最密切的维度设计为“抽象类”层次结构（抽象部分），
+而将另一个维度设计为“实现类”层次结构（实现部分）。  
+
+对于跨平台图像浏览系统的操作系统和图像文件格式两个维度，如果这样设计：
+```python
+from abc import ABC
+class Image(ABC):
+    pass
+class JPGImage(Image):
+    pass
+class GIFImage(Image):
+    pass
+class WindowsJPGImage(JPGImage):
+    pass
+class LinuxJPGImage(JPGImage):
+    pass
+class WindowsGIFImage(JPGImage):
+    pass
+class LinuxGIFImage(JPGImage):
+    pass
+```
+这种多层继承结构，类的数量极多，且扩展麻烦，会导致类的数量大量增大。  
+采用桥接模式，将操作系统和图像文件格式两个维度分离，使它们可以独立改变：
+```python
+from abc import ABC, abstractmethod
+class Image(ABC):
+    def __init__(self, imp=None):
+        self.imp = imp
+    def parseFile(self, file_name):
+        pass
+class JPGImage(Image):
+    def parseFile(self, file_name):
+        self.imp.doPaint()
+        print("This is JPG")
+class GIFImage(Image):
+    def parseFile(self, file_name):
+        self.imp.doPaint()
+        print("This is GIF")
+
+class ImageImp(ABC):
+    @abstractmethod
+    def doPaint(self):
+        pass
+class WindowsImageImp(ImageImp):
+    def doPaint(self):
+        print("This is Windows")
+class LinuxImageImp(ImageImp):
+    def doPaint(self):
+        print("This is Linux")
+
+if __name__ == '__main__':
+    imp = LinuxImageImp()  # 可从配置文件获得
+    image = JPGImage()  # 可从配置文件获得
+    image.imp = imp
+    image.parseFile("xxx.jpg")
+```
