@@ -929,3 +929,209 @@ if __name__ == '__main__':
  - 装饰模式是以对客户端透明的方式扩展对象的功能，是继承方案的一个替代方案；代理模式则是给一个对象提供一个代理对象，并由代理对象来控制对原有对象的引用；
  - 装饰模式是为装饰的对象增强功能；而代理模式对代理的对象施加控制，但不对对象本身的功能进行增强；  
 
+# 4 行为型模式
+## 4.1 职责链模式
+职责链可以是一条直线、一个环或者一个树形结构，最常见的职责链是直线型，即沿着一条单向的链来传递请求。
+链上的每一个对象都是请求处理者，职责链模式可以将请求的处理者组织成一条链，并让请求沿着链传递，由链上的处理者对请求进行相应的处理，
+客户端无须关心请求的处理细节以及请求的传递，只需将请求发送到链上即可，实现请求发送者和请求处理者解耦。  
+
+职责链模式(Chain of Responsibility Pattern)：避免请求发送者与接收者耦合在一起，让多个对象都有可能接收请求，将这些对象连接成一条链，
+并且沿着这条链传递请求，直到有对象处理它为止。  
+
+### 角色
+ - 抽象处理者：义了一个处理请求的接口，一般设计为抽象类，由于不同的具体处理者处理请求的方式不同，因此在其中定义了抽象请求处理方法。
+因为每一个处理者的下家还是一个处理者，因此在抽象处理者中定义了一个抽象处理者类型的对象（如结构图中的successor），作为其对下家的引用。
+通过该引用，处理者可以连成一条链。  
+ - 具体处理者：抽象处理者的子类，可以处理用户请求，在具体处理者类中实现了抽象处理者中定义的抽象请求处理方法，在处理请求之前需要进行判断，
+看是否有相应的处理权限，如果可以处理请求就处理它，否则将请求转发给后继者；在具体处理者中可以访问链中下一个对象，以便请求的转发。  
+
+```python
+from abc import ABC, abstractmethod
+
+class Handler(ABC):
+    
+    @abstractmethod
+    def set_next(self, handler):
+        pass
+    
+    @abstractmethod
+    def handle(self, request):
+        pass
+
+class AbstractHandler(Handler):
+    
+    _next_handler = None
+    
+    def set_next(self, handler):
+        self._next_handler = handler    
+        return handler
+    
+    @abstractmethod
+    def handle(self, request):
+        if self._next_handler:
+            return self._next_handler.handle(request)
+        return None
+
+class MonkeyHandler(AbstractHandler):
+    def handle(self, request):
+        if request == "Banana":
+            return "Monkey: I'll eat the %s" % request
+        return super().handle(request)
+
+class SquirrelHandler(AbstractHandler):
+    def handle(self, request):
+        if request == "Nut":
+            return "Squirrel: I'll eat the %s" % request
+        return super().handle(request)
+
+class DogHandler(AbstractHandler):
+    def handle(self, request):
+        if request == "Meat":
+            return "Dog: I'll eat the %s" % request
+        return super().handle(request)
+
+def client_code(handler: Handler) -> None:
+    """
+    The client code is usually suited to work with a single handler. In most
+    cases, it is not even aware that the handler is part of a chain.
+    """
+
+    for food in ["Nut", "Banana", "Cup of coffee"]:
+        print(f"\nClient: Who wants a {food}?")
+        result = handler.handle(food)
+        if result:
+            print(f"  {result}", end="")
+        else:
+            print(f"  {food} was left untouched.", end="")
+            
+if __name__ == '__main__':
+    monkey = MonkeyHandler()
+    squirrel = SquirrelHandler()
+    dog = DogHandler()
+    
+    monkey.set_next(squirrel).set_next(dog)
+    
+    # Chain: monkey -> squirrel -> dog
+    client_code(monkey)
+    # Chain: squirrel -> dog
+    client_code(squirrel)
+```
+
+### 优点
+ - 可以灵活控制请求处理的顺序。
+ - 单一职责原则。你可对发起操作和执行操作的类进行解耦。
+ - 开闭原则。 你可以在不更改现有代码的情况下在程序中新增处理者。
+
+### 缺点
+ - 部分请求可能未被处理。
+
+### 适用场景
+ - 有多个对象可以处理同一个请求，具体哪个对象处理该请求待运行时刻再确定，客户端只需将请求提交到链上，而无须关心请求的处理对象是谁以及它是如何处理的。
+ - 可动态指定一组对象处理请求，客户端可以动态创建职责链来处理请求，还可以改变链中处理者之间的先后次序。
+ - 当必须按顺序执行多个处理者时， 可以使用该模式。
+
+## 4.2 命令模式
+命令模式可以将请求发送者和接收者完全解耦，发送者与接收者之间没有直接引用关系，发送请求的对象只需要知道如何发送请求，而不必知道如何完成请求。  
+### 角色
+ - 抽象命令类：声明了用于执行请求的execute()等方法，通过这些方法可以调用请求接收者的相关操作。
+ - 具体命令类：实现了在抽象命令类中声明的方法，它对应具体的接收者对象，将接收者对象的动作绑定其中。在实现execute()方法时，将调用接收者对象的相关操作(Action)。
+ - 调用者：调用者即请求发送者，在程序运行时可以将一个具体命令对象注入其中，再调用具体命令对象的execute()方法，从而实现间接调用请求接收者的相关操作。  
+ - 接收者：接收者执行与请求相关的操作，它具体实现对请求的业务处理。绝大部分命令只处理如何将请求传递到接收者的细节， 接收者自己会完成实际的工作。
+
+命令模式的本质是对请求进行封装，一个请求对应于一个命令，将发出命令的责任和执行命令的责任分割开。  
+```python
+from abc import ABC, abstractmethod
+class Command(ABC):
+    @abstractmethod
+    def execute(self):
+        pass
+
+class ConcreteCommand(Command):
+    
+    receiver = None
+    
+    def execute(self):
+        self.receiver.action()
+
+class Invoker:
+    command = None
+    
+    def __init__(self, command=None):
+        self.command = command
+    
+    def call(self):
+        self.command.execute()
+    
+
+class Receiver:
+    
+    def action(self):
+        # do something
+        pass
+```
+每一个具体命令类(ConcreteCommand)对应一个请求的处理者（接收者Receiver），
+通过向请求发送者(Invoker)注入不同的具体命令对象(ConcreteCommand)可以使得相同的发送者(Invoker)对应不同的接收者(接收者Receiver)，
+从而实现“将一个请求封装为一个对象，用不同的请求对客户进行参数化”，客户端只需要将具体命令对象作为参数注入请求发送者，无须直接操作请求的接收者。  
+
+有时候我们需要将多个请求排队，当一个请求发送者发送一个请求时，将不止一个请求接收者产生响应，这些请求接收者将逐个执行业务方法，完成对请求的处理。
+此时，我们可以通过命令队列来实现。  
+最常用、灵活性最好的一种方式是增加一个CommandQueue类，由该类来负责存储多个命令对象，而不同的命令对象可以对应不同的请求接收者。  
+```python
+class CommandQueue:
+    
+    commands = list()
+    
+    def addCommand(self, cmd):
+        self.commands.append(cmd)
+    
+    def removeCommand(self, cmd):
+        self.commands.remove(cmd)
+    
+    def execute(self):
+        for cmd in self.commands:
+            cmd.execute()
+
+# 在增加了命令队列类CommandQueue以后，请求发送者类Invoker将针对CommandQueue编程
+class Invoker:
+    
+    command_queue = None
+    
+    def __init__(self, command_queue=None):
+        self.command_queue = command_queue
+    
+    def call(self):
+        self.command_queue.execute()
+```
+命令队列与我们常说的“批处理”有点类似。批处理，顾名思义，可以对一组对象（命令）进行批量处理，当一个发送者发送请求后，
+将有一系列接收者对请求作出响应，命令队列可以用于设计批处理应用程序，如果请求接收者的接收次序没有严格的先后次序，
+我们还可以使用多线程技术来并发调用命令对象的execute()方法，从而提高程序的执行效率。  
+
+在命令模式中，我们可以通过调用一个命令对象的execute()方法来实现对请求的处理，如果需要撤销(Undo)请求，可通过在命令类中增加一个逆向操作来实现。
+即在Command抽象类加一个undo方法，ConcreteCommand实现这个方法。  
+
+请求日志就是将请求的历史记录保存下来，通常以日志文件(Log File)的形式永久存储在计算机中。日志文件可以为系统提供一种恢复机制，
+在请求日志文件中可以记录用户对系统的每一步操作，从而让系统能够顺利恢复到某一个特定的状态；请求日志也可以用于实现批处理，
+在一个请求日志文件中可以存储一系列命令对象，例如一个命令队列。  
+在实现请求日志时，我们可以将命令对象通过序列化写到日志文件中。（pickle in Python）  
+
+宏命令(Macro Command)又称为组合命令，它是组合模式和命令模式联用的产物。宏命令是一个具体命令类，它拥有一个集合属性，
+在该集合中包含了对其他命令对象的引用。通常宏命令不直接与请求接收者交互，而是通过它的成员来调用接收者的方法。当调用宏命令的execute()方法时，
+将递归调用它所包含的每个成员命令的execute()方法，一个宏命令的成员可以是简单命令，还可以继续是宏命令。执行一个宏命令将触发多个具体命令的执行，
+从而实现对命令的批处理。  
+
+### 优点
+ - 单一职责原则。 你可以解耦触发和执行操作的类。
+ - 开闭原则。 你可以在不修改已有客户端代码的情况下在程序中创建新的命令。
+ - 为请求的撤销(Undo)和恢复(Redo)操作提供了一种设计和实现方案。
+ - 可以比较容易地设计一个命令队列或宏命令（组合命令）。
+
+### 缺点
+ - 使用命令模式可能会导致某些系统有过多的具体命令类。
+
+### 适用场景
+ - 需要通过操作来参数化对象，客户端只需要将具体命令对象作为参数注入请求发送者，无须直接操作请求的接收者。
+ - 系统需要支持命令的撤销(Undo)操作和恢复(Redo)操作。
+ - 系统需要将一组操作组合在一起形成宏命令。
+
+
+
