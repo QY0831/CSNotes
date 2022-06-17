@@ -89,7 +89,7 @@ if __name__ == '__main__':
     product = Factory.get_product(product_name)
 ```
 
-# 2.2 工厂方法模式
+## 2.2 工厂方法模式
 简单工厂模式虽然简单，但存在一个很严重的问题。当系统中需要引入新产品时，由于静态工厂方法通过所传入参数的不同来创建不同的产品，
 这必定要修改工厂类的源代码，将违背“开闭原则”，如何实现增加新产品而不影响已有代码？  
 在工厂方法模式中，我们不再提供一个统一的工厂类来创建所有的产品对象，而是针对不同的产品提供不同的工厂，
@@ -268,6 +268,7 @@ print(child.singl_variable)  # Singleton Variable
 但当A执行完毕时，线程B并不知道实例已经创建，将继续创建新的实例，导致产生多个单例对象，违背单例模式的设计思想，
 因此需要进行进一步改进，进行一次(instance == null)判断，这种方式称为双重检查锁定(Double-Check Locking)。  
 ```python
+import threading
 class Singleton:
   _instance = None
   _lock = threading.Lock()
@@ -1133,5 +1134,178 @@ class Invoker:
  - 系统需要支持命令的撤销(Undo)操作和恢复(Redo)操作。
  - 系统需要将一组操作组合在一起形成宏命令。
 
+## 4.3 解释器模式
+在某些情况下，为了更好地描述某一些特定类型的问题，我们可以创建一种新的语言，这种语言拥有自己的表达式和结构，即文法规则，
+这些问题的实例将对应为该语言中的句子。此时，可以使用解释器模式来设计这种新的语言。  
+解释器模式(Interpreter Pattern)：定义一个语言的文法，并且建立一个解释器来解释该语言中的句子，这里的“语言”是指使用规定格式和语法的代码。
+解释器模式是一种类行为型模式。  
+### 角色
+ - 抽象表达式：声明了抽象的解释操作，它是所有终结符表达式和非终结符表达式的公共父类。
+ - 终结符表达式：实现了与文法中的终结符相关联的解释操作，在句子中的每一个终结符都是该类的一个实例。
+ - 非终结符表达式：实现了文法中非终结符的解释操作，由于在非终结符表达式中可以包含终结符表达式，也可以继续包含非终结符表达式，因此其解释操作一般通过递归的方式来完成。
+ - 环境类：又称为上下文类，它用于存储解释器之外的一些全局信息，通常它临时存储了需要解释的语句。
 
+```python
+from abc import ABC, abstractmethod
+
+class AbstractExpression(ABC):
+    @abstractmethod
+    def interpret(self, context):
+        pass
+
+class TerminalExpression(AbstractExpression):
+    def interpret(self, context):
+        # do sth.
+        pass
+    
+# 非终结符表达式，其代码相对比较复杂，因为可以通过非终结符将表达式组合成更加复杂的结构，对于包含两个操作元素的非终结符表达式类
+class NonterminalExpression(AbstractExpression):
+    
+    def __init__(self, left=None, right=None):
+        self.left = left
+        self.right = right
+    
+    def interpret(self, context):
+        # 递归调用每一个组成部分的interpret()方法
+        # 在递归调用时指定组成部分的连接方式，即非终结符的功能
+        pass
+
+class Context:
+    map = None  # 存储一系列公共信息
+    def assign(self, key, value):
+        # 往环境类中设值
+        pass
+    
+    def lookup(self, key):
+        # 获取存储在环境类中的值
+        pass
+```
+### 优点
+ - 易于改变和扩展文法。
+ - 增加新的解释表达式较为方便。如果用户需要增加新的解释表达式只需要对应增加一个新的终结符表达式或非终结符表达式类，原有表达式类代码无须修改，符合“开闭原则”。
+### 缺点
+ - 对于复杂文法难以维护。在解释器模式中，每一条规则至少需要定义一个类，因此如果一个语言包含太多文法规则，类的个数将会急剧增加，导致系统难以管理和维护。
+ - 执行效率较低。由于在解释器模式中使用了大量的循环和递归调用，因此在解释较为复杂的句子时其速度很慢，而且代码的调试过程也比较麻烦。
+### 适用场景
+ - 可以将一个需要解释执行的语言中的句子表示为一个抽象语法树。
+ - 一些重复出现的问题可以用一种简单的语言来进行表达。
+ - 执行效率不是关键问题。【注：高效的解释器通常不是通过直接解释抽象语法树来实现的，而是需要将它们转换成其他形式，使用解释器模式的执行效率并不高。】
+
+## 4.4 迭代器模式
+在软件开发中，存在大量类似电视机一样的类，它们可以存储多个成员对象（元素），这些类通常称为聚合类(Aggregate Classes)，
+对应的对象称为聚合对象。为了更加方便地操作这些聚合对象，同时可以很灵活地为聚合对象增加不同的遍历方法，我们也需要类似电视机遥控器一样的角色，
+可以访问一个聚合对象中的元素但又不需要暴露它的内部结构。  
+
+若聚合类的职责过重，它既负责存储和管理数据，又负责遍历数据，违反了“单一职责原则”，
+将聚合类中负责遍历数据的方法提取出来，封装到专门的类中，实现数据存储和数据遍历分离，无须暴露聚合类的内部属性即可对其进行操作，
+而这正是迭代器模式的意图所在。  
+
+迭代器模式(Iterator Pattern)：提供一种方法来访问聚合对象，而不用暴露这个对象的内部表示，其别名为游标(Cursor)。  
+
+### 角色
+ - 抽象迭代器：定义了访问和遍历元素的接口，声明了用于遍历数据元素的方法，例如：用于获取第一个元素的first()方法，用于访问下一个元素的next()方法，用于判断是否还有下一个元素的hasNext()方法，用于获取当前元素的currentItem()方法等，在具体迭代器中将实现这些方法。
+ - 具体迭代器：实现了抽象迭代器接口，完成对聚合对象的遍历，同时在具体迭代器中通过游标来记录在聚合对象中所处的当前位置，在具体实现时，游标通常是一个表示位置的非负整数。
+ - 抽象聚合类：用于存储和管理元素对象，声明一个createIterator()方法用于创建一个迭代器对象，充当抽象迭代器工厂角色。
+ - 具体聚合类：实现了在抽象聚合类中声明的createIterator()方法，该方法返回一个与该具体聚合类对应的具体迭代器ConcreteIterator实例。
+
+```python
+from __future__ import annotations
+from collections.abc import Iterable, Iterator
+from typing import Any, List
+
+
+"""
+To create an iterator in Python, there are two abstract classes from the built-
+in `collections` module - Iterable,Iterator. We need to implement the
+`__iter__()` method in the iterated object (collection), and the `__next__ ()`
+method in theiterator.
+"""
+
+
+class AlphabeticalOrderIterator(Iterator):
+    """
+    Concrete Iterators implement various traversal algorithms. These classes
+    store the current traversal position at all times.
+    """
+
+    """
+    `_position` attribute stores the current traversal position. An iterator may
+    have a lot of other fields for storing iteration state, especially when it
+    is supposed to work with a particular kind of collection.
+    """
+    _position: int = None
+
+    """
+    This attribute indicates the traversal direction.
+    """
+    _reverse: bool = False
+
+    def __init__(self, collection: WordsCollection, reverse: bool = False) -> None:
+        self._collection = collection
+        self._reverse = reverse
+        self._position = -1 if reverse else 0
+
+    def __next__(self):
+        """
+        The __next__() method must return the next item in the sequence. On
+        reaching the end, and in subsequent calls, it must raise StopIteration.
+        """
+        try:
+            value = self._collection[self._position]
+            self._position += -1 if self._reverse else 1
+        except IndexError:
+            raise StopIteration()
+
+        return value
+
+
+class WordsCollection(Iterable):
+    """
+    Concrete Collections provide one or several methods for retrieving fresh
+    iterator instances, compatible with the collection class.
+    """
+
+    def __init__(self, collection: List[Any] = []) -> None:
+        self._collection = collection
+
+    def __iter__(self) -> AlphabeticalOrderIterator:
+        """
+        The __iter__() method returns the iterator object itself, by default we
+        return the iterator in ascending order.
+        """
+        return AlphabeticalOrderIterator(self._collection)
+
+    def get_reverse_iterator(self) -> AlphabeticalOrderIterator:
+        return AlphabeticalOrderIterator(self._collection, True)
+
+    def add_item(self, item: Any):
+        self._collection.append(item)
+
+
+if __name__ == "__main__":
+    # The client code may or may not know about the Concrete Iterator or
+    # Collection classes, depending on the level of indirection you want to keep
+    # in your program.
+    collection = WordsCollection()
+    collection.add_item("First")
+    collection.add_item("Second")
+    collection.add_item("Third")
+
+    print("Straight traversal:")
+    print("\n".join(collection))
+    print("")
+
+    print("Reverse traversal:")
+    print("\n".join(collection.get_reverse_iterator()), end="")
+```
+
+### 优点
+ - 支持以不同的方式遍历一个聚合对象，在同一个聚合对象上可以定义多种遍历方式。
+ - 迭代器简化了聚合类。由于引入了迭代器，在原有的聚合对象中不需要再自行提供数据遍历等方法，这样可以简化聚合类的设计。
+ - 在迭代器模式中，由于引入了抽象层，增加新的聚合类和迭代器类都很方便，无须修改原有代码，满足“开闭原则”的要求。
+### 缺点
+ - 由于迭代器模式将存储数据和遍历数据的职责分离，增加新的聚合类需要对应增加新的迭代器类，类的个数成对增加，这在一定程度上增加了系统的复杂性。
+### 适用场景
+ - 访问一个聚合对象的内容而无须暴露它的内部表示。将聚合对象的访问与内部数据的存储分离，使得访问聚合对象时无须了解其内部实现细节。
+ - 需要为一个聚合对象提供多种遍历方式。
 
