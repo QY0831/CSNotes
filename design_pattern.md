@@ -1308,4 +1308,263 @@ if __name__ == "__main__":
 ### 适用场景
  - 访问一个聚合对象的内容而无须暴露它的内部表示。将聚合对象的访问与内部数据的存储分离，使得访问聚合对象时无须了解其内部实现细节。
  - 需要为一个聚合对象提供多种遍历方式。
+ 
+## 4.5 中介者模式
+对象之间存在大量的多对多联系，将导致系统非常复杂，这些对象既会影响别的对象，也会被别的对象所影响，这些对象称为同事对象，
+它们之间通过彼此的相互作用实现系统的行为。在网状结构中，几乎每个对象都需要与其他对象发生相互作用，
+而这种相互作用表现为一个对象与另外一个对象的直接耦合，这将导致一个过度耦合的系统。  
+
+中介者模式可以使对象之间的关系数量急剧减少，通过引入中介者对象，可以将系统的网状结构变成以中介者为中心的星形结构。  
+
+如果在一个系统中对象之间存在多对多的相互关系，我们可以将对象之间的一些交互行为从各个对象中分离出来，并集中封装在一个中介者对象中，
+并由该中介者进行统一协调，这样对象之间多对多的复杂关系就转化为相对简单的一对多关系。通过引入中介者来简化对象之间的复杂交互，
+中介者模式是“迪米特法则”的一个典型应用。  
+
+中介者模式(Mediator Pattern)：用一个中介对象（中介者）来封装一系列的对象交互，中介者使各对象不需要显式地相互引用，从而使其耦合松散，
+而且可以独立地改变它们之间的交互。  
+
+### 角色
+ - 抽象中介者：该接口用于与各同事对象之间进行通信。
+ - 具体中介者：抽象中介者的子类，通过协调各个同事对象来实现协作行为，它维持了对各个同事对象的引用。
+ - 抽象同事类：定义各个同事类公有的方法，并声明了一些抽象方法来供子类实现，同时它维持了一个对抽象中介者类的引用，其子类可以通过该引用来与中介者通信。
+ - 具体同事类：抽象同事类的子类；每一个同事对象在需要和其他同事对象通信时，先与中介者通信，通过中介者来间接完成与其他同事类的通信；在具体同事类中实现了在抽象同事类中声明的抽象方法。
+
+```python
+from abc import ABC,abstractmethod
+class Mediator(ABC):
+    
+    colleagues = []
+    
+    def register(self, colleague):
+        self.colleagues.append(colleague)
+    
+    @abstractmethod
+    def operation(self):
+        pass
+
+class ConcreteMediator(Mediator):
+    
+    def operation(self):
+        pass
+        # 调用同事类的方法，并加入一些代码对调用进行控制
+        # self.colleagues[0].method()
+
+class Colleague(ABC):
+    
+    def __init__(self, mediator=None):    
+        self.mediator = mediator
+    
+    @abstractmethod
+    def method1(self):
+        # 声明自身方法，处理自己的行为
+        pass
+    
+    def method2(self):
+        # 定义依赖方法，与中介者进行通信
+        self.mediator.operation()
+
+class ConcreteColleague(Colleague):
+    
+    def method1(self):
+        pass
+        # 实现自身方法
+```
+Component充当抽象同事类，Button、ListBox和TextBox充当具体同事类，Mediator充当抽象中介者类，ConcreteMediator充当具体中介者类，
+ConcreteMediator维持了对具体同事类的引用。  
+```python
+from abc import ABC,abstractmethod
+class Mediator(ABC):
+    @abstractmethod
+    def operation(self, component):
+        pass
+
+class ConcreteMediator(Mediator):
+    
+    def __init__(self, button, list_box, text_box):
+        self.button = button
+        self.list_box = list_box
+        self.text_box = text_box
+    
+    def operation(self, component):
+        if component == self.button:
+            self.text_box.update()  # 单击按钮，提交文本框内容
+        elif component == self.list_box:
+            self.list_box.select()  # 在列表框中选中用户
+            self.text_box.set_text() # 将选中的用户更新到文本框
+
+class Component(ABC):
+
+    def __init__(self, mediator=None):    
+        self.mediator = mediator
+    
+    def changed(self):
+        # 转发调用
+        self.mediator.operation(self)
+
+class Button(Component):
+    pass
+
+class ListBox(Component):
+    def select(self):
+        print("SELECT User Jack")
+
+class TextBox(Component):
+    def update(self):
+        print("Update textbox content")
+    
+    def set_text(self):
+        print("Set text")
+
+if __name__ == '__main__':
+    bt = Button()
+    lb = ListBox()
+    tb = TextBox()
+    
+    mediator = ConcreteMediator(bt, lb, tb)
+    bt.mediator = mediator
+    lb.mediator = mediator
+    tb.mediator = mediator
+
+    bt.changed()
+    lb.changed()
+```
+### 优点
+ - 简化了对象之间的交互，将各同事对象解耦。
+
+### 缺点
+ - 在具体中介者类中包含了大量同事之间的交互细节，可能会导致具体中介者类非常复杂，使得系统难以维护。
+
+### 适用场景
+ - 对象之间存在复杂的引用关系，系统结构混乱且难以理解。
+ - 一个对象由于引用了其他很多对象并且直接和这些对象通信，导致难以复用该对象。
+ - 想通过一个中间类来封装多个类中的行为，而又不想生成太多的子类。
+
+
+
+## 4.6 备忘录模式
+备忘录模式提供了一种状态恢复的实现机制，使得用户可以方便地回到一个特定的历史步骤，当新的状态无效或者存在问题时，可以使用暂时存储起来的备忘录将状态复原，当前很多软件都提供了撤销(Undo)操作，其中就使用了备忘录模式。  
+
+备忘录模式(Memento Pattern)：在不破坏封装的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态，这样可以在以后将对象恢复到原先保存的状态。它是一种对象行为型模式，其别名为Token。  
+
+### 角色
+ - 原发器：一个普通类，可以创建一个备忘录，并存储它的当前内部状态，也可以使用备忘录来恢复其内部状态，一般将需要保存内部状态的类设计为原发器。
+ - 备忘录：存储原发器的内部状态，根据原发器来决定保存哪些内部状态。
+ - 负责人：负责人又称为管理者，它负责保存备忘录，但是不能对备忘录的内容进行操作或检查。
+
+```python
+from abc import ABC, abstractmethod
+class Originator:
+    
+    def __init__(self):
+        self.state = None
+
+    def createMemento(self):
+        return Memento(self)
+    
+    def restoreMemento(self, m):
+        self.state = m.state
+    
+    def setState(self, state):
+        self.state = state
+
+    def getState(self):
+        return self.state
+
+class Memento:
+    
+    def __init__(self, originator):
+        self.state = originator.getState()
+
+    def setState(self, state):
+        self.state = state
+
+    def getState(self):
+        return self.state
+
+class Caretaker:
+    
+    def __init__(self):
+        self.memento = None
+
+    def getMemento(self):
+        return self.memento
+    
+    def setMemento(self, memento):
+        self.memento = memento
+```
+在设计备忘录类时需要考虑其封装性，除了Originator类，不允许其他类来调用备忘录类Memento的构造函数与相关方法。  
+对于负责人类Caretaker，它用于保存备忘录对象，并提供getMemento()方法用于向客户端返回一个备忘录对象，原发器通过使用这个备忘录对象可以回到某个历史状态。  
+
+可悔棋的象棋系统：
+```python
+class Chess:
+    
+    def __init__(self, label, x, y):
+        self.label = label 
+        self.x = x
+        self.y = y
+    
+    def save(self):
+        return Memento(self.label, self.x, self.y)
+    
+    def restore(self, memento):
+        self.label = memento.label
+        self.x = memento.x
+        self.y = memento.y
+        
+class Memento:
+    
+    def __init__(self, label, x, y):
+        self.label = label 
+        self.x = x
+        self.y = y
+
+class Caretaker:
+    
+    def __init__(self):
+        self.__memento = None
+    
+    def saveMemento(self, memento):
+        self.__memento = memento
+        
+    def getMemento(self):
+        return self.__memento
+
+
+if __name__ == '__main__':
+    caretaker = Caretaker()
+    chess = Chess("车", 1, 1)
+    caretaker.saveMemento(chess.save())
+    chess.x = 2
+    caretaker.saveMemento(chess.save())
+    chess.y = 2
+    # 悔棋
+    chess.restore(caretaker.getMemento())
+```
+
+如何实现多次撤销呢？那就是在负责人类中定义一个集合来存储多个备忘录，每个备忘录负责保存一个历史状态，
+在撤销时可以对备忘录集合进行逆向遍历，回到一个指定的历史状态，而且还可以对备忘录集合进行正向遍历，
+实现重做(Redo)操作，即取消撤销，让对象状态得到恢复。  
+
+```python
+class Caretaker:
+    
+    def __init__(self):
+        self.__mementolist = list()
+    
+    def getMemento(self, i):
+        return self.__mementolist[i]
+    
+    def saveMemento(self, memento):
+        self.__mementolist.append(memento)
+```
+
+### 优点
+ - 提供了一种状态恢复的实现机制，使得用户可以方便地回到一个特定的历史步骤，当新的状态无效或者存在问题时，可以使用暂时存储起来的备忘录将状态复原。
+
+### 缺点
+ - 资源消耗过大，如果需要保存的原发器类的成员变量太多，就不可避免需要占用大量的存储空间，每保存一次对象的状态都需要消耗一定的系统资源。
+
+### 适用场景
+ - 保存一个对象在某一个时刻的全部状态或部分状态，这样以后需要时它能够恢复到先前的状态，实现撤销操作。
 
