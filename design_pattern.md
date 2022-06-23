@@ -1438,9 +1438,7 @@ if __name__ == '__main__':
  - 对象之间存在复杂的引用关系，系统结构混乱且难以理解。
  - 一个对象由于引用了其他很多对象并且直接和这些对象通信，导致难以复用该对象。
  - 想通过一个中间类来封装多个类中的行为，而又不想生成太多的子类。
-
-
-
+ 
 ## 4.6 备忘录模式
 备忘录模式提供了一种状态恢复的实现机制，使得用户可以方便地回到一个特定的历史步骤，当新的状态无效或者存在问题时，可以使用暂时存储起来的备忘录将状态复原，当前很多软件都提供了撤销(Undo)操作，其中就使用了备忘录模式。  
 
@@ -1567,4 +1565,189 @@ class Caretaker:
 
 ### 适用场景
  - 保存一个对象在某一个时刻的全部状态或部分状态，这样以后需要时它能够恢复到先前的状态，实现撤销操作。
+ 
+## 4.7 观察者模式
+用于建立一种对象与对象之间的依赖关系，一个对象发生改变时将自动通知其他对象，其他对象将相应作出反应。  
+在观察者模式中，发生改变的对象称为观察目标，而被通知的对象称为观察者，一个观察目标可以对应多个观察者，而且这些观察者之间可以没有任何相互联系，可以根据需要增加和删除观察者，使得系统更易于扩展。  
+
+### 角色
+ - 目标：又称为主题，它是指被观察的对象。在目标中定义了一个观察者集合，一个观察目标可以接受任意数量的观察者来观察，它提供一系列方法来增加和删除观察者对象，同时它定义了通知方法notify()。目标类可以是接口，也可以是抽象类或具体类。  
+ - 具体目标：目标类的子类，通常它包含有经常发生改变的数据，当它的状态发生改变时，向它的各个观察者发出通知；同时它还实现了在目标类中定义的抽象业务逻辑方法（如果有的话）。
+ - 观察者：观察者将对观察目标的改变做出反应，观察者一般定义为接口，该接口声明了更新数据的方法update()。  
+ - 具体观察者：在具体观察者中维护一个指向具体目标对象的引用，它存储具体观察者的有关状态，这些状态需要和具体目标的状态保持一致；它实现了在抽象观察者Observer中定义的update()方法。
+```python
+from abc import ABC, abstractmethod
+class Subject(ABC):
+    
+    observers = []
+
+    def attach(self, observer):
+        self.observers.append(observer)
+
+    def detach(self, observer):
+        self.observers.remove(observer)
+    
+    @abstractmethod
+    def notify(self):
+        pass
+
+class ConcreteSubject(Subject):
+    
+    def notify(self):
+        for ob in self.observers:
+            ob.update()
+
+class Observer(ABC):
+    
+    @abstractmethod
+    def update(self):
+        pass
+
+class ConcreteObserver(Observer):
+
+    def update(self):
+        # 具体响应代码
+        pass
+```
+在有些更加复杂的情况下，具体观察者类ConcreteObserver的update()方法在执行时需要使用到具体目标类ConcreteSubject中的状态（属性），因此在ConcreteObserver与ConcreteSubject之间有时候还存在关联或依赖关系，在ConcreteObserver中定义一个ConcreteSubject实例，通过该实例获取存储在ConcreteSubject中的状态。 
+在当前流行的MVC(Model-View-Controller)架构中也应用了观察者模式，MVC是一种架构模式，它包含三个角色：模型(Model)，视图(View)和控制器(Controller)。其中模型可对应于观察者模式中的观察目标，而视图对应于观察者，控制器可充当两者之间的中介者。当模型层的数据发生改变时，视图层将自动改变其显示内容。  
+
+### 优点
+ - 实现表示层和数据逻辑层的分离，定义了稳定的消息更新传递机制，并抽象了更新接口，使得可以有各种各样不同的表示层充当具体观察者角色。
+ - 观察目标只需要维持一个抽象观察者的集合，无须了解其具体观察者。
+ - 观察目标会向所有已注册的观察者对象发送通知，简化了一对多系统设计的难度。
+ - 满足“开闭原则”的要求，增加新的具体观察者无须修改原有系统代码。
+
+### 缺点
+ - 如果一个观察目标对象有很多直接和间接观察者，将所有的观察者都通知到会花费很多时间。
+ - 观察者模式没有相应的机制让观察者知道所观察的目标对象是怎么发生变化的，而仅仅只是知道观察目标发生了变化。
+
+### 适用场景
+ - 一个对象的改变将导致一个或多个其他对象也发生改变，而并不知道具体有多少对象将发生改变，也不知道这些对象是谁。
+ - 需要在系统中创建一个触发链，A对象的行为将影响B对象，B对象的行为将影响C对象……，可以使用观察者模式创建一种链式触发机制。
+ 
+## 4.7 状态模式
+状态模式用于解决系统中复杂对象的状态转换以及不同状态下行为的封装问题。当系统中某个对象存在多个状态，这些状态之间可以进行转换，而且对象在不同状态下行为不相同时可以使用状态模式。
+
+### 角色
+ - 环境类：又称为上下文类，它是拥有多种状态的对象。由于环境类的状态存在多样性且在不同状态下对象的行为有所不同，因此将状态独立出去形成单独的状态类。在环境类中维护一个抽象状态类State的实例，这个实例定义当前状态，在具体实现时，它是一个State子类的对象。
+ - 抽象状态类：定义一个接口以封装与环境类的一个特定状态相关的行为，在抽象状态类中声明了各种不同状态对应的方法。
+ - 具体状态类：抽象状态类的子类，每一个子类实现一个与环境类的一个状态相关的行为，每一个具体状态类对应环境的一个具体状态，不同的具体状态类其行为有所不同。
+
+```python
+from __future__ import annotations
+from abc import ABC, abstractmethod
+
+
+class Context:
+    """
+    The Context defines the interface of interest to clients. It also maintains
+    a reference to an instance of a State subclass, which represents the current
+    state of the Context.
+    """
+
+    _state = None
+    """
+    A reference to the current state of the Context.
+    """
+
+    def __init__(self, state: State) -> None:
+        self.transition_to(state)
+
+    def transition_to(self, state: State):
+        """
+        The Context allows changing the State object at runtime.
+        """
+
+        print(f"Context: Transition to {type(state).__name__}")
+        self._state = state
+        self._state.setContext(self)
+
+    """
+    The Context delegates part of its behavior to the current State object.
+    """
+
+    def request1(self):
+        self._state.handle1()
+
+    def request2(self):
+        self._state.handle2()
+
+
+class State(ABC):
+    """
+    The base State class declares methods that all Concrete State should
+    implement and also provides a backreference to the Context object,
+    associated with the State. This backreference can be used by States to
+    transition the Context to another State.
+    """
+    
+    _context = None
+
+    @property
+    def context(self) -> Context:
+        return self._context
+
+    def setContext(self, context: Context) -> None:
+        self._context = context
+
+    @abstractmethod
+    def handle1(self) -> None:
+        pass
+
+    @abstractmethod
+    def handle2(self) -> None:
+        pass
+
+
+"""
+Concrete States implement various behaviors, associated with a state of the
+Context.
+"""
+
+
+class ConcreteStateA(State):
+    def handle1(self) -> None:
+        print("ConcreteStateA handles request1.")
+        print("ConcreteStateA wants to change the state of the context.")
+        self.context.transition_to(ConcreteStateB())
+
+    def handle2(self) -> None:
+        print("ConcreteStateA handles request2.")
+
+
+class ConcreteStateB(State):
+    def handle1(self) -> None:
+        print("ConcreteStateB handles request1.")
+
+    def handle2(self) -> None:
+        print("ConcreteStateB handles request2.")
+        print("ConcreteStateB wants to change the state of the context.")
+        self.context.transition_to(ConcreteStateA())
+
+
+if __name__ == "__main__":
+    # The client code.
+
+    context = Context(ConcreteStateA())
+    context.request1()
+    context.request2()
+```
+环境类实际上是真正拥有状态的对象，我们只是将环境类中与状态有关的代码提取出来封装到专门的状态类中。  
+在状态模式的使用过程中，一个对象的状态之间还可以进行相互转换，通常有两种实现状态转换的方式：
+ - 统一由环境类来负责状态之间的转换，在环境类的业务方法中通过对某些属性值的判断实现状态转换
+ - 由具体状态类来负责状态之间的转换，可以在具体状态类的业务方法中判断环境类的某些属性值再根据情况为环境类设置新的状态对象，实现状态转换
+
+### 优点
+ - 单一职责原则。将与特定状态相关的代码放在单独的类中。
+ - 开闭原则。无需修改已有状态类和上下文就能引入新状态。
+
+### 缺点
+ - 增加系统中类和对象的个数。
+
+### 适用场景
+ - 如果对象需要根据自身当前状态进行不同行为， 同时状态的数量非常多且与状态相关的代码会频繁变更的话， 可使用状态模式。
+ - 如果某个类需要根据成员变量的当前值改变自身行为， 从而需要使用大量的条件语句时， 可使用该模式。
+
+
 
