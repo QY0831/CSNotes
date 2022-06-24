@@ -1749,5 +1749,188 @@ if __name__ == "__main__":
  - 如果对象需要根据自身当前状态进行不同行为， 同时状态的数量非常多且与状态相关的代码会频繁变更的话， 可使用状态模式。
  - 如果某个类需要根据成员变量的当前值改变自身行为， 从而需要使用大量的条件语句时， 可使用该模式。
 
+## 4.8 策略模式
+在软件开发中，实现某一个功能有多条途径，每一条途径对应一种算法，此时我们可以使用一种设计模式来实现灵活地选择解决途径，也能够方便地增加新的解决途径。  
+在策略模式中，我们可以定义一些独立的类来封装不同的算法，每一个类封装一种具体的算法，在这里，每一个封装算法的类我们都可以称之为一种策略(Strategy)，为了保证这些策略在使用时具有一致性，一般会提供一个抽象的策略类来做规则的定义，而每种算法则对应于一个具体策略类。
+策略模式的主要目的是将算法的定义与使用分开，也就是将算法的行为和环境分开，将算法的定义放在专门的策略类中，每一个策略类封装了一种实现算法，使用算法的环境类针对抽象策略类进行编程，符合“依赖倒转原则”。在出现新的算法时，只需要增加一个新的实现了抽象策略类的具体策略类即可。
+
+### 角色
+ - 环境类：使用算法的角色，它在解决某个问题（即实现某个方法）时可以采用多种策略。环境类中维持一个对抽象策略类的引用实例，用于定义所采用的策略。
+ - 抽象策略类：为所支持的算法声明了抽象方法，是所有策略类的父类，它可以是抽象类或具体类，也可以是接口。环境类通过抽象策略类中声明的方法在运行时调用具体策略类中实现的算法。
+ - 具体策略类：实现了在抽象策略类中声明的算法，在运行时，具体策略类将覆盖在环境类中定义的抽象策略类对象，使用一种具体的算法实现某个业务处理。
+
+```python
+from abc import ABC, abstractmethod
+class AbstractStrategy(ABC):
+    @abstractmethod
+    def algorithm(self):
+        pass
+
+class ConcreteStrategyA(AbstractStrategy):
+    
+    def algorithm(self):
+        pass
+
+class Context:
+    
+    _strategy = None
+    
+    def setStrategy(self, strategy):
+        self._strategy = strategy
+    
+    def algorithm(self):
+        self._strategy.algorithm()
+
+```
+在客户端代码中只需给环境对象注入一个具体策略对象，可以将具体策略类类名存储在配置文件中。
+
+### 优点
+ - 将算法的实现和使用算法的代码隔离开来。
+ - 使用组合来代替继承。如果不使用策略模式，那么使用算法的环境类就可能会有一些子类，每一个子类提供一种不同的算法。但是，这样一来算法的使用就和算法本身混在一起，不符合“单一职责原则”，决定使用哪一种算法的逻辑和该算法本身混合在一起，从而不可能再独立演化；而且使用继承无法实现算法或行为在程序运行时的动态切换。
+ - 开闭原则。用户可以在不修改原有系统的基础上选择算法或行为，也可以灵活地增加新的算法或行为。
+
+### 缺点
+ - 客户端必须知道所有的策略类，并自行决定使用哪一个策略类。
+ - 将造成系统产生很多具体策略类。
+ - 无法同时在客户端使用多个策略类。
+
+### 适用场景
+ - 一个系统需要动态地在几种算法中选择一种，这些具体算法类均有统一的接口，根据“里氏代换原则”和面向对象的多态性，客户端可以选择使用任何一个具体算法类，并只需要维持一个数据类型是抽象算法类的对象。
+ - 如果算法在上下文的逻辑中不是特别重要， 使用该模式能将类的业务逻辑与其算法实现细节隔离开来。
+
+## 4.9 模板方法
+模板方法模式：定义一个操作中算法的框架，而将一些步骤延迟到子类中。模板方法模式使得子类可以不改变一个算法的结构即可重定义该算法的某些特定步骤。  
+
+### 角色
+ - 抽象类：在抽象类中定义了一系列基本操作(PrimitiveOperations)，这些基本操作可以是具体的，也可以是抽象的，每一个基本操作对应算法的一个步骤，在其子类中可以重定义或实现这些步骤。同时，在抽象类中实现了一个模板方法(Template Method)，用于定义一个算法的框架，模板方法不仅可以调用在抽象类中实现的基本方法，也可以调用在抽象类的子类中实现的基本方法，还可以调用其他对象中的方法。
+ - 具体子类：抽象类的子类，用于实现在父类中声明的抽象基本操作以完成子类特定算法的步骤，也可以覆盖在父类中已经实现的具体基本操作。
+
+```python
+from abc import ABC, abstractmethod
+
+
+class AbstractClass(ABC):
+    """
+    The Abstract Class defines a template method that contains a skeleton of
+    some algorithm, composed of calls to (usually) abstract primitive
+    operations.
+
+    Concrete subclasses should implement these operations, but leave the
+    template method itself intact.
+    """
+
+    def template_method(self) -> None:
+        """
+        The template method defines the skeleton of an algorithm.
+        """
+
+        self.base_operation1()
+        self.required_operations1()
+        self.base_operation2()
+        self.hook1()
+        self.required_operations2()
+        self.base_operation3()
+        self.hook2()
+
+    # These operations already have implementations.
+
+    def base_operation1(self) -> None:
+        print("AbstractClass says: I am doing the bulk of the work")
+
+    def base_operation2(self) -> None:
+        print("AbstractClass says: But I let subclasses override some operations")
+
+    def base_operation3(self) -> None:
+        print("AbstractClass says: But I am doing the bulk of the work anyway")
+
+    # These operations have to be implemented in subclasses.
+
+    @abstractmethod
+    def required_operations1(self) -> None:
+        pass
+
+    @abstractmethod
+    def required_operations2(self) -> None:
+        pass
+
+    # These are "hooks." Subclasses may override them, but it's not mandatory
+    # since the hooks already have default (but empty) implementation. Hooks
+    # provide additional extension points in some crucial places of the
+    # algorithm.
+
+    def hook1(self) -> None:
+        pass
+
+    def hook2(self) -> None:
+        pass
+
+
+class ConcreteClass1(AbstractClass):
+    """
+    Concrete classes have to implement all abstract operations of the base
+    class. They can also override some operations with a default implementation.
+    """
+
+    def required_operations1(self) -> None:
+        print("ConcreteClass1 says: Implemented Operation1")
+
+    def required_operations2(self) -> None:
+        print("ConcreteClass1 says: Implemented Operation2")
+
+
+class ConcreteClass2(AbstractClass):
+    """
+    Usually, concrete classes override only a fraction of base class'
+    operations.
+    """
+
+    def required_operations1(self) -> None:
+        print("ConcreteClass2 says: Implemented Operation1")
+
+    def required_operations2(self) -> None:
+        print("ConcreteClass2 says: Implemented Operation2")
+
+    def hook1(self) -> None:
+        print("ConcreteClass2 says: Overridden Hook1")
+
+
+def client_code(abstract_class: AbstractClass) -> None:
+    """
+    The client code calls the template method to execute the algorithm. Client
+    code does not have to know the concrete class of an object it works with, as
+    long as it works with objects through the interface of their base class.
+    """
+
+    # ...
+    abstract_class.template_method()
+    # ...
+
+
+if __name__ == "__main__":
+    print("Same client code can work with different subclasses:")
+    client_code(ConcreteClass1())
+    print("")
+
+    print("Same client code can work with different subclasses:")
+    client_code(ConcreteClass2())
+```
+模板方法模式是基于继承的代码复用技术，它体现了面向对象的诸多重要思想，是一种使用较为频繁的模式。模板方法模式广泛应用于框架设计中，以确保通过父类来控制处理流程的逻辑顺序（如框架的初始化，测试流程的设置等）。
+
+### 优点
+ - 在父类中形式化地定义一个算法，而由它的子类来实现细节的处理，在子类实现详细的处理算法时并不会改变算法中步骤的执行次序。
+ - 模板方法模式是一种代码复用技术，它在类库设计中尤为重要，它提取了类库中的公共行为，将公共行为放在父类中，而通过其子类来实现不同的行为，它鼓励我们恰当使用继承来实现代码复用。
+ - 可实现一种反向控制结构，通过子类覆盖父类的钩子方法来决定某一特定步骤是否需要执行。
+ - 在模板方法模式中可以通过子类来覆盖父类的基本方法，不同的子类可以提供基本方法的不同实现，更换和增加新的子类很方便，符合单一职责原则和开闭原则。
+
+### 缺点
+ - 需要为每一个基本方法的不同实现提供一个子类，如果父类中可变的基本方法太多，将会导致类的个数增加，系统更加庞大，设计也更加抽象，此时，可结合桥接模式来进行设计。
+
+### 适用场景
+ - 对一些复杂的算法进行分割，将其算法中固定不变的部分设计为模板方法和父类具体方法，而一些可以改变的细节由其子类来实现。
+ - 各子类中公共的行为应被提取出来并集中到一个公共父类中以避免代码重复。
+
+
+
+
 
 
