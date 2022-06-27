@@ -269,19 +269,37 @@ print(child.singl_variable)  # Singleton Variable
 因此需要进行进一步改进，进行一次(instance == null)判断，这种方式称为双重检查锁定(Double-Check Locking)。  
 ```python
 import threading
-class Singleton:
-  _instance = None
-  _lock = threading.Lock()
 
-  def __new__(cls, *args, **kwargs):
-    if not cls._instance:
-        with cls._lock:
-          # another thread could have created the instance
-          # before we acquired the lock. So check that the
-          # instance is still nonexistent.
-          if not cls._instance:
-            cls._instance = super(Singleton, cls).__new__(cls)
-    return cls._instance
+class Singleton:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            with cls._lock:
+                # another thread could have created the instance
+                # before we acquired the lock. So check that the
+                # instance is still nonexistent.
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+
+def get_singleton():
+    singleton = Singleton()
+    print(singleton)
+
+
+if __name__ == '__main__':
+    process1 = threading.Thread(target=get_singleton)
+    process2 = threading.Thread(target=get_singleton)
+    process1.start()
+    process2.start()
+
+```
+```text
+<__main__.Singleton object at 0x10e6b2a30>
+<__main__.Singleton object at 0x10e6b2a30>
 ```
 ### 优点
  - 单例模式提供了对唯一实例的受控访问。因为单例类封装了它的唯一实例，所以它可以严格控制客户怎样以及何时访问它。  
