@@ -1930,7 +1930,150 @@ if __name__ == "__main__":
  - 各子类中公共的行为应被提取出来并集中到一个公共父类中以避免代码重复。
 
 
+## 4.10 访问者模式
+在软件开发中，有时候我们需要处理集合对象结构，在该对象结构中存储了多个不同类型的对象信息，而且对同一对象结构中的元素的操作方式并不唯一，可能需要提供多种不同的处理方式，还有可能增加新的处理方式。  
+访问者模式(Visitor Pattern):提供一个作用于某对象结构中的各元素的操作表示，它使我们可以在不改变各元素的类的前提下定义作用于这些元素的新操作。访问者模式是一种对象行为型模式。  
 
+### 角色
+ - 抽象访问者： 抽象访问者为对象结构中每一个具体元素类ConcreteElement声明一个访问操作，从这个操作的名称或参数类型可以清楚知道需要访问的具体元素的类型，具体访问者需要实现这些操作方法，定义对这些元素的访问操作。
+ - 具体访问者： 具体访问者实现了每个由抽象访问者声明的操作，每一个操作用于访问对象结构中一种类型的元素。
+ - 抽象元素：抽象元素一般是抽象类或者接口，它定义一个accept()方法，该方法通常以一个抽象访问者作为参数。
+ - 具体元素：具体元素实现了accept()方法，在accept()方法中调用访问者的访问方法以便完成对一个元素的操作。
+ - 对象结构：对象结构是一个元素的集合，它用于存放元素对象，并且提供了遍历其内部元素的方法。它可以结合组合模式来实现，也可以是一个简单的集合对象，如一个List对象或一个Set对象。
+
+```python
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import List
+
+
+class Component(ABC):
+    """
+    The Component interface declares an `accept` method that should take the
+    base visitor interface as an argument.
+    """
+
+    @abstractmethod
+    def accept(self, visitor: Visitor) -> None:
+        pass
+
+
+class ConcreteComponentA(Component):
+    """
+    Each Concrete Component must implement the `accept` method in such a way
+    that it calls the visitor's method corresponding to the component's class.
+    """
+
+    def accept(self, visitor: Visitor) -> None:
+        """
+        Note that we're calling `visitConcreteComponentA`, which matches the
+        current class name. This way we let the visitor know the class of the
+        component it works with.
+        """
+
+        visitor.visit_concrete_component_a(self)
+
+    def exclusive_method_of_concrete_component_a(self) -> str:
+        """
+        Concrete Components may have special methods that don't exist in their
+        base class or interface. The Visitor is still able to use these methods
+        since it's aware of the component's concrete class.
+        """
+
+        return "A"
+
+
+class ConcreteComponentB(Component):
+    """
+    Same here: visitConcreteComponentB => ConcreteComponentB
+    """
+
+    def accept(self, visitor: Visitor):
+        visitor.visit_concrete_component_b(self)
+
+    def special_method_of_concrete_component_b(self) -> str:
+        return "B"
+
+
+class Visitor(ABC):
+    """
+    The Visitor Interface declares a set of visiting methods that correspond to
+    component classes. The signature of a visiting method allows the visitor to
+    identify the exact class of the component that it's dealing with.
+    """
+
+    @abstractmethod
+    def visit_concrete_component_a(self, element: ConcreteComponentA) -> None:
+        pass
+
+    @abstractmethod
+    def visit_concrete_component_b(self, element: ConcreteComponentB) -> None:
+        pass
+
+
+"""
+Concrete Visitors implement several versions of the same algorithm, which can
+work with all concrete component classes.
+
+You can experience the biggest benefit of the Visitor pattern when using it with
+a complex object structure, such as a Composite tree. In this case, it might be
+helpful to store some intermediate state of the algorithm while executing
+visitor's methods over various objects of the structure.
+"""
+
+
+class ConcreteVisitor1(Visitor):
+    def visit_concrete_component_a(self, element) -> None:
+        print(f"{element.exclusive_method_of_concrete_component_a()} + ConcreteVisitor1")
+
+    def visit_concrete_component_b(self, element) -> None:
+        print(f"{element.special_method_of_concrete_component_b()} + ConcreteVisitor1")
+
+
+class ConcreteVisitor2(Visitor):
+    def visit_concrete_component_a(self, element) -> None:
+        print(f"{element.exclusive_method_of_concrete_component_a()} + ConcreteVisitor2")
+
+    def visit_concrete_component_b(self, element) -> None:
+        print(f"{element.special_method_of_concrete_component_b()} + ConcreteVisitor2")
+
+
+def client_code(components: List[Component], visitor: Visitor) -> None:
+    """
+    The client code can run visitor operations over any set of elements without
+    figuring out their concrete classes. The accept operation directs a call to
+    the appropriate operation in the visitor object.
+    """
+
+    # ...
+    for component in components:
+        component.accept(visitor)
+    # ...
+
+
+if __name__ == "__main__":
+    components = [ConcreteComponentA(), ConcreteComponentB()]
+
+    print("The client code works with all visitors via the base Visitor interface:")
+    visitor1 = ConcreteVisitor1()
+    client_code(components, visitor1)
+
+    print("It allows the same client code to work with different types of visitors:")
+    visitor2 = ConcreteVisitor2()
+    client_code(components, visitor2)
+```
+
+### 优点
+ - 开闭原则。使用访问者模式，增加新的访问操作就意味着增加一个新的具体访问者类，实现简单，无须修改源代码。
+ - 单一职责原则。将有关元素对象的访问行为集中到一个访问者对象中，而不是分散在一个个的元素类中。类的职责更加清晰。
+
+### 缺点
+ - 增加新的元素类很困难。在访问者模式中，每增加一个新的元素类都意味着要在抽象访问者角色中增加一个新的抽象操作，并在每一个具体访问者类中增加相应的具体操作，这违背了“开闭原则”的要求。
+ - 破坏封装。访问者模式要求访问者对象访问并调用每一个元素对象的操作，这意味着元素对象有时候必须暴露一些自己的内部操作和内部状态，否则无法供访问者访问。
+
+### 适用场景
+ - 一个对象结构包含多个类型的对象，希望对这些对象实施一些依赖其具体类型的操作。在访问者中针对每一种具体的类型都提供了一个访问操作，不同类型的对象可以有不同的访问操作。
+ - 需要对一个对象结构中的对象进行很多不同的并且不相关的操作，将对象本身与对象的访问操作分离。
 
 
 
