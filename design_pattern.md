@@ -390,16 +390,26 @@ class Builder(ABC):
     def getResult(self):
         return self.product
 
-class ConcreteBuilder(Builder):
+class ConcreteBuilder1(Builder):
     def buildPartA(self):
-        self.product.partA = 'A'
+        self.product.partA = 'A1'
     
     def buildPartB(self):
-        self.product.partB = 'B'
+        self.product.partB = 'B1'
     
     def getResult(self):
         return self.product
 
+class ConcreteBuilder2(Builder):
+    def buildPartA(self):
+        self.product.partA = 'A2'
+    
+    def buildPartB(self):
+        self.product.partB = 'B2'
+    
+    def getResult(self):
+        return self.product
+    
 class Director:
     
     def __init__(self, builder):
@@ -411,14 +421,14 @@ class Director:
         return self.builder.getResult()
 
 if __name__ == '__main__':
-    builder = ConcreteBuilder()  # 可通过配置文件实现
+    builder = ConcreteBuilder2()  # 可通过配置文件实现
     director = Director(builder)
     product = director.construct()
 ```
 假设我们要建造一个房屋对象，一种直接的方法是在房屋基类中创建一个包括所有可能参数的超级构造函数，并用它来控制房屋对象。
 通常情况下，绝大部分的参数都没有使用，这使得对于构造函数的调用十分不简洁。例如，只有很少的房子有游泳池，因此与游泳池相关的参数十之八九是毫无用处的。    
 对于不同类型的房屋，提供不同的Builder，以实现创建不同类型的产品，如不同的门（铁门、木门等）。  
-Director类用来封装建造这个房屋的步骤，对于客户端代码来说，主管类完全隐藏了产品构造细节。客户端只需要将一个生成器与主管类关联，然后使用主管类来构造产品，就能从生成器处获得构造结果了。  
+Director类用来封装建造这个房屋的步骤，对于客户端代码来说，主管类完全隐藏了产品构造细节。客户端只需要将一个生成器与主管类关联，然后使用主管类来构造产品，就能从生成器处获得构造结果了。
 ### 优点
  - 客户端不必知道产品内部组成的细节，将产品本身与产品的创建过程解耦。
  - 每一个具体建造者都相对独立，而与其他的具体建造者无关，因此可以很方便地替换具体建造者或增加新的具体建造者，用户使用不同的具体建造者即可得到不同的产品对象。
@@ -441,15 +451,15 @@ Director类用来封装建造这个房屋的步骤，对于客户端代码来说
  - 适配者类: 适配者即被适配的角色，它定义了一个已经存在的接口，这个接口需要适配，适配者类一般是一个具体类，包含了客户希望使用的业务方法。(我们仅知道其参数和返回值，而不知道其细节，也不能修改其细节)
 ```python
 from abc import ABC
-class Adaptee:
+class Target(ABC): # 目标抽象类
+    def methodA(self):
+        pass
+    
+class Adaptee: # 适配者类
     def need_method(self):
         pass
 
-class Target(ABC):
-    def methodA(self):
-        pass
-
-class Adaptor(Target):
+class Adaptor(Target): # 适配器类
     
     def __init__(self):
         self.adpatee = Adaptee()
@@ -457,6 +467,39 @@ class Adaptor(Target):
     def methodA(self):
         self.adpatee.need_method()
 ```
+比如，正在开发一套股票分析程序，它收集各个信息来源的xml文件，此时我们希望在程序中引入第三方的智能分析工具，但该工具只支持json格式，
+为了解决数据格式不兼容的问题，你可以为分析函数库中的每个类创建将 XML 转换为 JSON 格式的适配器， 
+然后让客户端仅通过这些适配器来与函数库进行交流。当某个适配器被调用时，它会将传入的 XML 数据转换为 JSON 结构，并将其传递给被封装分析对象的相应方法。  
+```python
+class StockAnalyzer:
+
+    def analyze(self):
+        print("Target: The default target's behavior.")
+
+
+class ThirdPartyTool:
+
+    def analyze_json(self):
+        print("Adaptee: special method -> Analyzing JSON")
+
+
+class Adaptor(StockAnalyzer):
+
+    _adaptee = ThirdPartyTool()
+
+    def convert_xml_to_json(self):
+        print("Convert xml to json")
+
+    def analyze(self):
+        self.convert_xml_to_json()
+        self._adaptee.analyze_json()
+
+
+if __name__ == '__main__':
+    adaptor = Adaptor()
+    adaptor.analyze()
+```
+
 除了对象适配器模式之外，适配器模式还有一种形式，那就是类适配器模式，类适配器模式和对象适配器模式最大的区别在于适配器和适配者之间的关系不同，
 对象适配器模式中适配器和适配者之间是关联关系，而类适配器模式中适配器和适配者是继承关系。  
 由于Java、C#等语言不支持多重类继承，因此类适配器的使用受到很多限制，类适配器较少使用。  
