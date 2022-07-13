@@ -950,6 +950,7 @@ class RealImage(Image):
     
     def __init__(self, file_name=None):
         self.file_name = file_name
+        self.load_from_disk()
         
     def load_from_disk(self):
         print("Load %s" % self.file_name)
